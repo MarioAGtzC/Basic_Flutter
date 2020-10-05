@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:formvalidation/src/bloc/provider.dart';
 import 'package:formvalidation/src/models/producto_model.dart';
-import 'package:formvalidation/src/providers/productos_provider.dart';
 
 // class HomePage extends StatefulWidget {
 //   @override
@@ -9,29 +8,28 @@ import 'package:formvalidation/src/providers/productos_provider.dart';
 // }
 
 class HomePage extends StatelessWidget {
-  final productosProvider = new ProductosProvider();
-
   @override
   Widget build(BuildContext context) {    
-    final bloc = Provider.of(context);
+    final productosBloc = Provider.productosBloc(context);
+    productosBloc.cargarProductos();
 
     return Scaffold(
       appBar: AppBar(
         title: Text('Home'),
       ),
-      body: _crearListado(),
+      body: _crearListado(productosBloc),
       floatingActionButton: _crearBoton(context),
     );
   }
 
-  Widget _crearListado() {
-    return FutureBuilder(
-      future: productosProvider.cargarProductos(),
-      builder: (BuildContext context, AsyncSnapshot<List<ProductoModel>> snapshot) {
+  Widget _crearListado(ProductosBloc productosBloc) {
+    return StreamBuilder(
+      stream: productosBloc.productosStream,
+      builder: (BuildContext context, AsyncSnapshot<List<ProductoModel>> snapshot){
         if(snapshot.hasData) {
           return ListView.builder(
             itemCount: snapshot.data.length,
-            itemBuilder: (context, i) => _crearItem(context, snapshot.data[i], snapshot.data, i),
+            itemBuilder: (context, i) => _crearItem(context, productosBloc, snapshot.data[i], snapshot.data, i),
           );
         } else {
           return Center(
@@ -42,18 +40,13 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  Widget _crearItem(BuildContext context, ProductoModel producto, List<ProductoModel> productos, int i) {
+  Widget _crearItem(BuildContext context, ProductosBloc productosBloc, ProductoModel producto, List<ProductoModel> productos, int i) {
     return Dismissible(
       key: UniqueKey(),
       background: Container(
         color: Colors.red,
       ),
-      onDismissed: (direccion) {
-        productosProvider.borrarProducto(producto.id);
-          // .then((value) => setState(() {
-          //   productos.removeAt(i);
-          // }));
-      },
+      onDismissed: (direccion) => productosBloc.borrarProducto(producto.id),
       child: Card(
         child: Column(
           children: <Widget>[
